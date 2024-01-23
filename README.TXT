@@ -1,3 +1,6 @@
+Modifikasi IT RSU Khalishah
+Catatan: Modifikasi ini dibuat untuk meningkatkan fungsionalitas aplikasi sesuai kebutuhan pada RSU Khalishah.
+
 	Software ini adalah Software Menejemen Rumah Sakit/Klinik/
   Puskesmas yang  gratis, open source dan boleh digunakan siapa saja tanpa dikenai 
   biaya apapun.  Hal yang tidak boleh dilakukan adalah memperjualbelikan/mengambil 
