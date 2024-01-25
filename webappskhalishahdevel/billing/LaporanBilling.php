@@ -9,6 +9,10 @@ include '../phpqrcode/qrlib.php';
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
     <script src="https://rawgit.com/eKoopmans/html2pdf/master/dist/html2pdf.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.js"></script>
+    <script src="https://printjs-4de6.kxcdn.com/print.min.js"></script>
+    <link href="https://printjs-4de6.kxcdn.com/print.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #ffffff;
@@ -43,54 +47,80 @@ include '../phpqrcode/qrlib.php';
         </script> -->
     <script>
         function saveAsPdf() {
-            // Mendapatkan informasi waktu saat ini
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0'); // Membuat dua digit untuk bulan
-            const day = String(now.getDate()).padStart(2, '0'); // Membuat dua digit untuk hari
-            const hours = String(now.getHours()).padStart(2, '0'); // Membuat dua digit untuk jam
-            const minutes = String(now.getMinutes()).padStart(2, '0'); // Membuat dua digit untuk menit
-            const seconds = String(now.getSeconds()).padStart(2, '0'); // Membuat dua digit untuk detik
+            const printArea = document.getElementById('print-area');
 
-            // Nama file PDF dengan tanggal, jam, menit, dan detik
-            const fileName = `laporanbilling${year}${month}${day}_${hours}${minutes}${seconds}.pdf`;
+            // Periksa apakah elemen ditemukan
+            if (printArea) {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const hours = String(now.getHours()).padStart(2, '0');
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                const fileName = `laporanbilling${year}${month}${day}_${hours}${minutes}${seconds}.pdf`;
 
-            // Mengubah halaman web menjadi PDF dengan nama file
-            html2pdf(document.body, {
-                filename: fileName
-            });
+                // Mengubah elemen dengan ID "print-area" menjadi PDF
+                html2pdf(printArea, {
+                    filename: fileName,
+                    margin: 10,
+                    jsPDF: {
+                        unit: 'mm',
+                        format: 'a4',
+                        orientation: 'portrait'
+                    },
+                    image: {
+                        type: 'jpeg',
+                        quality: 0.98
+                    }
+                });
 
-
-            document.querySelector('.download-button').style.display = 'none';
+                // Menyembunyikan tombol download setelah mengunduh
+                document.querySelector('.download-button').style.display = 'none';
+            } else {
+                console.error('Element with ID "print-area" not found.');
+            }
         }
+    </script>
+
+    <script>
+        $(document).ready(function() {
+            $("#btnPrint").on("click", function() {
+                printJS({
+                    printable: 'print-area',
+                    type: 'html'
+                });
+            })
+        })
     </script>
 
     <a href="#" class="download-button" onclick="saveAsPdf()">
         <img src="icon/download.png" alt="Gambar icon Download" width="20" height="20">
     </a>
-    <a href="#" id="printButton">
+    <a href="#" id="btnPrint">
         <img src="icon/print.png" alt="Gambar icon Download" width="20" height="20">
     </a>
-    <?php
-    reportsqlinjection();
-    $usere      = trim(isset($_GET['usere'])) ? trim($_GET['usere']) : NULL;
-    $passwordte = trim(isset($_GET['passwordte'])) ? trim($_GET['passwordte']) : NULL;
-    if ((USERHYBRIDWEB == $usere) && (PASHYBRIDWEB == $passwordte)) {
-        $petugas        = validTeks4(str_replace("_", " ", $_GET['petugas']), 20);
-        $tanggal        = validTeks4(str_replace("_", " ", $_GET['tanggal']), 20);
-        $nonota         = str_replace(": ", "", getOne("select temporary_bayar_ralan.temp2 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp1='No.Nota'"));
-        $norawat        = getOne("select nota_jalan.no_rawat from nota_jalan where nota_jalan.no_nota='$nonota'");
-        $kodecarabayar  = getOne("select reg_periksa.kd_pj from reg_periksa where reg_periksa.no_rawat='$norawat'");
-        $carabayar      = getOne("select penjab.png_jawab from penjab where penjab.kd_pj='$kodecarabayar'");
-        $PNG_TEMP_DIR   = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR;
-        $PNG_WEB_DIR    = 'temp/';
-        if (!file_exists($PNG_TEMP_DIR)) mkdir($PNG_TEMP_DIR);
-        $_sql           = "select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp4,temporary_bayar_ralan.temp5,temporary_bayar_ralan.temp6,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp8,temporary_bayar_ralan.temp9,temporary_bayar_ralan.temp10,temporary_bayar_ralan.temp11,temporary_bayar_ralan.temp12,temporary_bayar_ralan.temp13,temporary_bayar_ralan.temp14 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' order by temporary_bayar_ralan.no asc";
-        $hasil          = bukaquery($_sql);
+    <div id="print-area" class="print-main">
+        <?php
+        reportsqlinjection();
+        $usere      = trim(isset($_GET['usere'])) ? trim($_GET['usere']) : NULL;
+        $passwordte = trim(isset($_GET['passwordte'])) ? trim($_GET['passwordte']) : NULL;
+        if ((USERHYBRIDWEB == $usere) && (PASHYBRIDWEB == $passwordte)) {
+            $petugas        = validTeks4(str_replace("_", " ", $_GET['petugas']), 20);
+            $tanggal        = validTeks4(str_replace("_", " ", $_GET['tanggal']), 20);
+            $nonota         = str_replace(": ", "", getOne("select temporary_bayar_ralan.temp2 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp1='No.Nota'"));
+            $norawat        = getOne("select nota_jalan.no_rawat from nota_jalan where nota_jalan.no_nota='$nonota'");
+            $kodecarabayar  = getOne("select reg_periksa.kd_pj from reg_periksa where reg_periksa.no_rawat='$norawat'");
+            $carabayar      = getOne("select penjab.png_jawab from penjab where penjab.kd_pj='$kodecarabayar'");
+            $PNG_TEMP_DIR   = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR;
+            $PNG_WEB_DIR    = 'temp/';
+            if (!file_exists($PNG_TEMP_DIR)) mkdir($PNG_TEMP_DIR);
+            $_sql           = "select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp4,temporary_bayar_ralan.temp5,temporary_bayar_ralan.temp6,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp8,temporary_bayar_ralan.temp9,temporary_bayar_ralan.temp10,temporary_bayar_ralan.temp11,temporary_bayar_ralan.temp12,temporary_bayar_ralan.temp13,temporary_bayar_ralan.temp14 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' order by temporary_bayar_ralan.no asc";
+            $hasil          = bukaquery($_sql);
 
-        if (mysqli_num_rows($hasil) != 0) {
-            $setting =  mysqli_fetch_array(bukaquery("select setting.nama_instansi,setting.alamat_instansi,setting.kabupaten,setting.propinsi,setting.kontak,setting.email,setting.logo from setting"));
-            echo "   
+            if (mysqli_num_rows($hasil) != 0) {
+                $setting =  mysqli_fetch_array(bukaquery("select setting.nama_instansi,setting.alamat_instansi,setting.kabupaten,setting.propinsi,setting.kontak,setting.email,setting.logo from setting"));
+                echo "   
                 <table width='" . getOne("select set_nota.notaralan from set_nota") . "' bgcolor='#ffffff' align='left' border='0' padding='0' class='tbl_form' cellspacing='0' cellpadding='0'>
                 <tr class='isi12' padding='0'>
                     <td colspan='7' padding='0'>
@@ -115,154 +145,154 @@ include '../phpqrcode/qrlib.php';
                     </td>
                 </tr>
                 ";
-            $z = 1;
-            while ($inapdrpasien = mysqli_fetch_array($hasil)) {
-                if ($z <= 6) {
-                    echo "<tr class='isi12' padding='0'>
+                $z = 1;
+                while ($inapdrpasien = mysqli_fetch_array($hasil)) {
+                    if ($z <= 6) {
+                        echo "<tr class='isi12' padding='0'>
                                     <td padding='0' width='30%'><font color='000000' size='1'  face='Tahoma'>" . str_replace("  ", "&nbsp;&nbsp;", $inapdrpasien[0]) . "</td> 
                                     <td padding='0' width='40%' colspan='6'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[1]</td>              
                                  </tr>";
+                    }
+                    $z++;
                 }
-                $z++;
-            }
 
-            $_sql = "select temporary_bayar_ralan.temp2 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='Dokter' group by temporary_bayar_ralan.temp2 order by temporary_bayar_ralan.no asc";
-            $hasil = bukaquery($_sql);
-            echo "<tr class='isi12' padding='0'>
+                $_sql = "select temporary_bayar_ralan.temp2 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='Dokter' group by temporary_bayar_ralan.temp2 order by temporary_bayar_ralan.no asc";
+                $hasil = bukaquery($_sql);
+                echo "<tr class='isi12' padding='0'>
                            <td padding='0' width='30%'><font color='000000' size='1'  face='Tahoma'>Dokter</td> 
                            <td padding='0' width='40%' colspan='6'>:";
-            while ($inapdrpasien = mysqli_fetch_array($hasil)) {
-                echo "<font color='000000' size='1'  face='Tahoma'>&nbsp;$inapdrpasien[0]</font></br>";
-            }
-            echo "</td>              
+                while ($inapdrpasien = mysqli_fetch_array($hasil)) {
+                    echo "<font color='000000' size='1'  face='Tahoma'>&nbsp;$inapdrpasien[0]</font></br>";
+                }
+                echo "</td>              
                           </tr>";
 
-            $hasil2 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='Registrasi' order by temporary_bayar_ralan.no asc");
-            while ($inapdrpasien = mysqli_fetch_array($hasil2)) {
-                echo "<tr class='isi12' padding='0'>
+                $hasil2 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='Registrasi' order by temporary_bayar_ralan.no asc");
+                while ($inapdrpasien = mysqli_fetch_array($hasil2)) {
+                    echo "<tr class='isi12' padding='0'>
                            <td padding='0' width='30%'><font color='000000' size='1'  face='Tahoma'>Administrasi Rekam Medik</td> 
                            <td padding='0' width='55%' colspan='4'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[1]</font></td>   
                            <td padding='0' width='1%'><font color='000000' size='1'  face='Tahoma'></font></td>     
                            <td padding='0' width='14%' align='right'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[3]</font></td>              
                           </tr>";
-            }
+                }
 
-            $hasil3 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp5 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and (temporary_bayar_ralan.temp8='Ralan Dokter' or temporary_bayar_ralan.temp8='Ralan Dokter Paramedis' or temporary_bayar_ralan.temp8='Ralan Paramedis' or temporary_bayar_ralan.temp8='Laborat' or temporary_bayar_ralan.temp8='Radiologi') order by temporary_bayar_ralan.no asc");
-            echo "<tr class='isi12' padding='0'>
+                $hasil3 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp5 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and (temporary_bayar_ralan.temp8='Ralan Dokter' or temporary_bayar_ralan.temp8='Ralan Dokter Paramedis' or temporary_bayar_ralan.temp8='Ralan Paramedis' or temporary_bayar_ralan.temp8='Laborat' or temporary_bayar_ralan.temp8='Radiologi') order by temporary_bayar_ralan.no asc");
+                echo "<tr class='isi12' padding='0'>
                            <td padding='0' width='30%' valign='top'><font color='000000' size='1'  face='Tahoma'>Tindakan</td> 
                            <td padding='0' width='40%' colspan='6'>
                            <table border='0' width='100%' padding='0' cellspacing='0' cellpadding='0'>
                                  ";
-            while ($inapdrpasien = mysqli_fetch_array($hasil3)) {
-                if (!empty($inapdrpasien[3])) {
-                    echo "<tr class='isi12' padding='0'> 
+                while ($inapdrpasien = mysqli_fetch_array($hasil3)) {
+                    if (!empty($inapdrpasien[3])) {
+                        echo "<tr class='isi12' padding='0'> 
                                              <td padding='0' width='80%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[1]</font></td>   
                                              <td padding='0' width='1%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[4]</font></td>   
                                              <td padding='0' width='19%' align='right'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[3]</font></td>              
                                          </tr>";
+                    }
                 }
-            }
-            echo "</table>
+                echo "</table>
                             </td>               
                           </tr>";
 
-            $hasil3 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp5 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='Operasi' order by temporary_bayar_ralan.no asc");
-            if (mysqli_num_rows($hasil3) != 0) {
-                echo "<tr class='isi12' padding='0'>
+                $hasil3 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp5 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='Operasi' order by temporary_bayar_ralan.no asc");
+                if (mysqli_num_rows($hasil3) != 0) {
+                    echo "<tr class='isi12' padding='0'>
                                <td padding='0' width='30%' valign='top'><font color='000000' size='1'  face='Tahoma'>Operasi / VK</td> 
                                <td padding='0' width='40%' colspan='6'>
                                <table border='0' width='100%' padding='0' cellspacing='0' cellpadding='0'>";
-                while ($inapdrpasien = mysqli_fetch_array($hasil3)) {
-                    if (!empty($inapdrpasien[3])) {
-                        echo "<tr class='isi12' padding='0'> 
+                    while ($inapdrpasien = mysqli_fetch_array($hasil3)) {
+                        if (!empty($inapdrpasien[3])) {
+                            echo "<tr class='isi12' padding='0'> 
                                                  <td padding='0' width='80%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[1]</font></td>   
                                                  <td padding='0' width='1%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[4]</font></td>   
                                                  <td padding='0' width='19%' align='right'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[3]</font></td>              
                                              </tr>";
+                        }
                     }
-                }
-                echo "</table>
+                    echo "</table>
                                 </td>               
                               </tr>";
-            }
+                }
 
-            $hasil4 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp8,temporary_bayar_ralan.temp5 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and (temporary_bayar_ralan.temp8='Obat' or temporary_bayar_ralan.temp8='TtlObat') group by temporary_bayar_ralan.temp2 order by temporary_bayar_ralan.no asc");
-            $inapdrpasien = mysqli_fetch_array($hasil4);
-            if (!empty($inapdrpasien[1])) {
-                echo "<tr class='isi12' padding='0'>
+                $hasil4 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp8,temporary_bayar_ralan.temp5 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and (temporary_bayar_ralan.temp8='Obat' or temporary_bayar_ralan.temp8='TtlObat') group by temporary_bayar_ralan.temp2 order by temporary_bayar_ralan.no asc");
+                $inapdrpasien = mysqli_fetch_array($hasil4);
+                if (!empty($inapdrpasien[1])) {
+                    echo "<tr class='isi12' padding='0'>
                                 <td padding='0' width='30%' valign='top'><font color='000000' size='1'  face='Tahoma'>Obat & BHP</td> 
                                 <td padding='0' width='40%' colspan='6'>
                                 <table border='0' width='100%' padding='0' cellspacing='0' cellpadding='0'>";
-                while ($inapdrpasien = mysqli_fetch_array($hasil4)) {
-                    if (!empty($inapdrpasien[3])) {
-                        echo "<tr class='isi12' padding='0'> 
+                    while ($inapdrpasien = mysqli_fetch_array($hasil4)) {
+                        if (!empty($inapdrpasien[3])) {
+                            echo "<tr class='isi12' padding='0'> 
                                                   <td padding='0' width='80%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[1]</font></td>   
                                                   <td padding='0' width='1%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[5]</font></td>   
                                                   <td padding='0' width='19%' align='right'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[3]</font></td>              
                                               </tr>";
-                    } else if ($inapdrpasien["temp8"] == "TtlObat") {
-                        echo "<tr class='isi12' padding='0'> 
+                        } else if ($inapdrpasien["temp8"] == "TtlObat") {
+                            echo "<tr class='isi12' padding='0'> 
                                                   <td padding='0' width='80%'><font color='000000' size='1'  face='Tahoma'></font></td>   
                                                   <td padding='0' width='1%'><font color='000000' size='1'  face='Tahoma'></font></td>   
                                                   <td padding='0' width='19%' align='right'><font color='000000' size='1'  face='Tahoma'><b>" . $inapdrpasien["temp2"] . "<b></font></td>              
                                               </tr>";
+                        }
                     }
-                }
-                echo "</table>
+                    echo "</table>
                                  </td>               
                                </tr>";
-            }
+                }
 
-            $hasil5 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp5 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='Potongan'  order by temporary_bayar_ralan.no asc");
-            while ($inapdrpasien = mysqli_fetch_array($hasil5)) {
-                echo "<tr class='isi12' padding='0'>
+                $hasil5 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp5 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='Potongan'  order by temporary_bayar_ralan.no asc");
+                while ($inapdrpasien = mysqli_fetch_array($hasil5)) {
+                    echo "<tr class='isi12' padding='0'>
                            <td padding='0' width='30%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[0]</td> 
                            <td padding='0' width='55%' colspan='4'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[1]</font></td>   
                            <td padding='0' width='1%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[4]</font></td>     
                            <td padding='0' width='14%' align='right'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[3]</font></td>              
                           </tr>";
-            }
+                }
 
-            $hasil6 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp5 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='Tambahan'  order by temporary_bayar_ralan.no asc");
-            while ($inapdrpasien = mysqli_fetch_array($hasil6)) {
-                echo "<tr class='isi12' padding='0'>
+                $hasil6 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp5 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='Tambahan'  order by temporary_bayar_ralan.no asc");
+                while ($inapdrpasien = mysqli_fetch_array($hasil6)) {
+                    echo "<tr class='isi12' padding='0'>
                                 <td padding='0' width='30%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[0]</td> 
                                 <td padding='0' width='55%' colspan='4'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[1]</font></td>   
                                 <td padding='0' width='1%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[4]</font></td>     
                                 <td padding='0' width='14%' align='right'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[3]</font></td>              
                               </tr>";
-            }
+                }
 
-            $hasil7 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp5 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='-' and temporary_bayar_ralan.temp7<>'' group by temporary_bayar_ralan.temp2 order by temporary_bayar_ralan.no asc");
-            while ($inapdrpasien = mysqli_fetch_array($hasil7)) {
-                echo "<tr class='isi12' padding='0'>
+                $hasil7 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7,temporary_bayar_ralan.temp5 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='-' and temporary_bayar_ralan.temp7<>'' group by temporary_bayar_ralan.temp2 order by temporary_bayar_ralan.no asc");
+                while ($inapdrpasien = mysqli_fetch_array($hasil7)) {
+                    echo "<tr class='isi12' padding='0'>
                                 <td padding='0' width='30%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[0]</td> 
                                 <td padding='0' width='55%' colspan='4'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[1]</font></td>   
                                 <td padding='0' width='1%'><font color='000000' size='1'  face='Tahoma'></font></td>     
                                 <td padding='0' width='14%' align='right'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[3]</font></td>              
                               </tr>";
-            }
+                }
 
-            $hasil7 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='Tagihan' and temporary_bayar_ralan.temp7<>'' order by temporary_bayar_ralan.no asc");
-            while ($inapdrpasien = mysqli_fetch_array($hasil7)) {
-                if ($inapdrpasien["temp1"] == "TOTAL BAYAR") {
-                    echo "<tr class='isi12' padding='0'>
+                $hasil7 = bukaquery("select temporary_bayar_ralan.temp1,temporary_bayar_ralan.temp2,temporary_bayar_ralan.temp3,temporary_bayar_ralan.temp7 from temporary_bayar_ralan where temporary_bayar_ralan.temp9='$petugas' and temporary_bayar_ralan.temp8='Tagihan' and temporary_bayar_ralan.temp7<>'' order by temporary_bayar_ralan.no asc");
+                while ($inapdrpasien = mysqli_fetch_array($hasil7)) {
+                    if ($inapdrpasien["temp1"] == "TOTAL BAYAR") {
+                        echo "<tr class='isi12' padding='0'>
                                     <td padding='0' width='30%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[0]</td> 
                                     <td padding='0' width='55%' colspan='4'><font color='000000' size='1'  face='Tahoma'></font></td>   
                                     <td padding='0' width='1%'><font color='000000' size='1'  face='Tahoma'></font></td>     
                                     <td padding='0' width='14%' align='right'><font color='000000' size='2'  face='Tahoma'><b>$inapdrpasien[3]</b></font></td>              
                                  </tr>";
-                } else {
-                    echo "<tr class='isi12' padding='0'>
+                    } else {
+                        echo "<tr class='isi12' padding='0'>
                                     <td padding='0' width='30%'><font color='000000' size='1'  face='Tahoma'>$inapdrpasien[0]</td> 
                                     <td padding='0' width='55%' colspan='4'><font color='000000' size='1'  face='Tahoma'></font></td>   
                                     <td padding='0' width='1%'><font color='000000' size='1'  face='Tahoma'></font></td>     
                                     <td padding='0' width='14%' align='right'><font color='000000' size='1'  face='Tahoma'><b>$inapdrpasien[3]</b></font></td>              
                                  </tr>";
+                    }
                 }
-            }
 
-            echo "
+                echo "
                             <tr class='isi12' padding='0'>
                                 <td colspan='7' padding='0'>
                                     <table width='100%' bgcolor='#ffffff' align='left' border='0' padding='0' cellspacing='0' cellpadding='0'>
@@ -276,20 +306,20 @@ include '../phpqrcode/qrlib.php';
                                         </tr>  
                                         <tr class='isi12' padding='0'>
                                          <td padding='0' width='50%' align=center><font color='000000' size='1'  face='Tahoma'>";
-            if (getOne("select count(petugas.nama) from petugas where petugas.nip='$petugas'") >= 1) {
-                $filename               = $PNG_TEMP_DIR . $petugas . '.png';
-                $errorCorrectionLevel   = 'L';
-                $matrixPointSize        = 4;
-                QRcode::png("Dikeluarkan di " . $setting["nama_instansi"] . ", Kabupaten/Kota " . $setting["kabupaten"] . "\nDitandatangani secara elektronik oleh " . getOne("select petugas.nama from petugas where petugas.nip='$petugas'") . "\nID  " . getOne3("select ifnull(sha1(sidikjari.sidikjari),'" . $petugas . "') from sidikjari inner join pegawai on pegawai.id=sidikjari.id where pegawai.nik='" . $petugas . "'", $petugas) . "\n" . $tanggal, $filename, $errorCorrectionLevel, $matrixPointSize, 2);
-                echo "<img width='50' height='50' src='" . $PNG_WEB_DIR . basename($filename) . "'/><br>( " . getOne("select petugas.nama from petugas where petugas.nip='$petugas'") . " )";
-            } else {
-                $filename               = $PNG_TEMP_DIR . $petugas . '.png';
-                $errorCorrectionLevel   = 'L';
-                $matrixPointSize        = 4;
-                QRcode::png("Dikeluarkan di " . $setting["nama_instansi"] . ", Kabupaten/Kota " . $setting["kabupaten"] . "\nDitandatangani secara elektronik oleh Admin Utama\nID ADMIN\n" . $tanggal, $filename, $errorCorrectionLevel, $matrixPointSize, 2);
-                echo "<img width='45' height='45' src='" . $PNG_WEB_DIR . basename($filename) . "'/><br>( Admin Utama )";
-            }
-            echo "</td>     
+                if (getOne("select count(petugas.nama) from petugas where petugas.nip='$petugas'") >= 1) {
+                    $filename               = $PNG_TEMP_DIR . $petugas . '.png';
+                    $errorCorrectionLevel   = 'L';
+                    $matrixPointSize        = 4;
+                    QRcode::png("Dikeluarkan di " . $setting["nama_instansi"] . ", Kabupaten/Kota " . $setting["kabupaten"] . "\nDitandatangani secara elektronik oleh " . getOne("select petugas.nama from petugas where petugas.nip='$petugas'") . "\nID  " . getOne3("select ifnull(sha1(sidikjari.sidikjari),'" . $petugas . "') from sidikjari inner join pegawai on pegawai.id=sidikjari.id where pegawai.nik='" . $petugas . "'", $petugas) . "\n" . $tanggal, $filename, $errorCorrectionLevel, $matrixPointSize, 2);
+                    echo "<img width='50' height='50' src='" . $PNG_WEB_DIR . basename($filename) . "'/><br>( " . getOne("select petugas.nama from petugas where petugas.nip='$petugas'") . " )";
+                } else {
+                    $filename               = $PNG_TEMP_DIR . $petugas . '.png';
+                    $errorCorrectionLevel   = 'L';
+                    $matrixPointSize        = 4;
+                    QRcode::png("Dikeluarkan di " . $setting["nama_instansi"] . ", Kabupaten/Kota " . $setting["kabupaten"] . "\nDitandatangani secara elektronik oleh Admin Utama\nID ADMIN\n" . $tanggal, $filename, $errorCorrectionLevel, $matrixPointSize, 2);
+                    echo "<img width='45' height='45' src='" . $PNG_WEB_DIR . basename($filename) . "'/><br>( Admin Utama )";
+                }
+                echo "</td>     
                                          <td padding='0' width='50%' align='center'><font color='000000' size='1'  face='Tahoma'>(.............)</font></td>              
                                         </tr>   
                                   </table>
@@ -297,13 +327,14 @@ include '../phpqrcode/qrlib.php';
                             </tr>
                       </table>                                
                 ";
+            } else {
+                echo "<font color='000000' size='1'  face='Times New Roman'><b>Data  Billing masih kosong !</b>";
+            }
         } else {
-            echo "<font color='000000' size='1'  face='Times New Roman'><b>Data  Billing masih kosong !</b>";
+            exit(header("Location:../index.php"));
         }
-    } else {
-        exit(header("Location:../index.php"));
-    }
-    ?>
+        ?>
+    </div>
 
 
     <script>
